@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
-import 'register_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
-  final _emailController = TextEditingController(text: 'arun@example.com');
-  final _passwordController = TextEditingController(text: 'password');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _mobileController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -44,32 +45,54 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
+    _mobileController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _animController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleRegister() {
     if (!_formKey.currentState!.validate()) return;
 
-    final auth = context.read<AuthProvider>();
-    final error = auth.login(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
+    // Mock registration — just show success and pop back to login
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Registration successful! Please sign in.'),
+        backgroundColor: AppTheme.accentTeal,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
+    Navigator.of(context).pop();
+  }
 
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: AppTheme.errorRed,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Required';
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
+    return null;
+  }
+
+  String? _validateMobile(String? value) {
+    if (value == null || value.isEmpty) return 'Required';
+    final mobileRegex = RegExp(r'^\d{10}$');
+    if (!mobileRegex.hasMatch(value)) return 'Enter a valid 10-digit number';
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Required';
+    if (value.length < 6) return 'Minimum 6 characters';
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) return 'Required';
+    if (value != _passwordController.text) return 'Passwords do not match';
+    return null;
   }
 
   @override
@@ -97,21 +120,22 @@ class _LoginScreenState extends State<LoginScreen>
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.accentTeal.withValues(alpha: 0.35),
+                              color:
+                                  AppTheme.accentTeal.withValues(alpha: 0.35),
                               blurRadius: 24,
                               offset: const Offset(0, 8),
                             ),
                           ],
                         ),
                         child: const Icon(
-                          Icons.fingerprint_rounded,
+                          Icons.person_add_alt_1_rounded,
                           size: 44,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Punch Desk',
+                        'Create Account',
                         style: Theme.of(context)
                             .textTheme
                             .headlineLarge
@@ -119,12 +143,12 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Track your attendance effortlessly',
+                        'Join PunchDesk to track your attendance',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      const SizedBox(height: 44),
+                      const SizedBox(height: 36),
 
-                      // ── Login Card ──
+                      // ── Register Card ──
                       Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
@@ -147,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                'Welcome back',
+                                'Register',
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineMedium
@@ -155,10 +179,27 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Sign in to continue',
+                                'Fill in your details to get started',
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
-                              const SizedBox(height: 28),
+                              const SizedBox(height: 24),
+
+                              // Name
+                              TextFormField(
+                                controller: _nameController,
+                                keyboardType: TextInputType.name,
+                                textCapitalization: TextCapitalization.words,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: 'Full Name',
+                                  prefixIcon:
+                                      Icon(Icons.person_outline, size: 20),
+                                ),
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                              ),
+                              const SizedBox(height: 14),
 
                               // Email
                               TextFormField(
@@ -170,11 +211,23 @@ class _LoginScreenState extends State<LoginScreen>
                                   prefixIcon:
                                       Icon(Icons.email_outlined, size: 20),
                                 ),
-                                validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Required'
-                                    : null,
+                                validator: _validateEmail,
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 14),
+
+                              // Mobile
+                              TextFormField(
+                                controller: _mobileController,
+                                keyboardType: TextInputType.phone,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: 'Mobile number',
+                                  prefixIcon:
+                                      Icon(Icons.phone_outlined, size: 20),
+                                ),
+                                validator: _validateMobile,
+                              ),
+                              const SizedBox(height: 14),
 
                               // Password
                               TextFormField(
@@ -196,13 +249,37 @@ class _LoginScreenState extends State<LoginScreen>
                                         _obscurePassword = !_obscurePassword),
                                   ),
                                 ),
-                                validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Required'
-                                    : null,
+                                validator: _validatePassword,
                               ),
-                              const SizedBox(height: 28),
+                              const SizedBox(height: 14),
 
-                              // Login Button
+                              // Confirm Password
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  hintText: 'Confirm Password',
+                                  prefixIcon: const Icon(
+                                      Icons.lock_reset_outlined,
+                                      size: 20),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureConfirmPassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => setState(() =>
+                                        _obscureConfirmPassword =
+                                            !_obscureConfirmPassword),
+                                  ),
+                                ),
+                                validator: _validateConfirmPassword,
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Register Button
                               SizedBox(
                                 height: 54,
                                 child: DecoratedBox(
@@ -219,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     ],
                                   ),
                                   child: ElevatedButton(
-                                    onPressed: _handleLogin,
+                                    onPressed: _handleRegister,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.transparent,
                                       shadowColor: Colors.transparent,
@@ -228,32 +305,25 @@ class _LoginScreenState extends State<LoginScreen>
                                             BorderRadius.circular(14),
                                       ),
                                     ),
-                                    child: const Text('Sign In'),
+                                    child: const Text('Create Account'),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 20),
 
-                              // Sign Up link
+                              // Back to Login
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Don\'t have an account? ',
+                                    'Already have an account? ',
                                     style:
                                         Theme.of(context).textTheme.bodyMedium,
                                   ),
                                   GestureDetector(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const RegisterScreen(),
-                                        ),
-                                      );
-                                    },
+                                    onTap: () => Navigator.of(context).pop(),
                                     child: Text(
-                                      'Sign Up',
+                                      'Sign In',
                                       style: TextStyle(
                                         color: AppTheme.accentTeal,
                                         fontWeight: FontWeight.w600,
@@ -267,6 +337,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                       ),
+                      const SizedBox(height: 28),
                     ],
                   ),
                 ),
